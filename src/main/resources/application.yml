@@ -1,0 +1,21 @@
+git:
+  repo:
+    base: ${GIT_REPO_BASE}
+    destino: ${GIT_REPO_DESTINO}
+  owner: ${GIT_OWNER}
+  repoName: ${GIT_REPO_NAME}
+  branch: ${GIT_BRANCH}
+  user: ${GIT_USER}
+  token: ${GIT_TOKEN}
+
+github:
+  api-url: https://api.github.com
+
+feign:
+  httpclient:
+    enabled: true
+  okhttp:
+    enabled: false
+  codec:
+    jackson:
+      enabled: true
