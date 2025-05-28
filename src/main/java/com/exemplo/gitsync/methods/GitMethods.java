@@ -6,10 +6,12 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.net.URISyntaxException;
 
+@Component
 public class GitMethods {
 
     private GitMethods() {
@@ -47,9 +49,8 @@ public class GitMethods {
                 .call();
     }
 
-    public static Boolean merge(Git repo, Ref upstream) throws GitAPIException {
-        MergeResult mergeResult = repo.merge().include(upstream).call();
-        return mergeResult.getMergeStatus().isSuccessful();
+    public static MergeResult merge(Git repo, Ref upstream) throws GitAPIException {
+        return repo.merge().include(upstream).call();
     }
 
     public static void commitAndPush(Git repo, String timestamp, String updateBranch, UsernamePasswordCredentialsProvider creds) throws GitAPIException {
