@@ -102,5 +102,6 @@ public class GitSyncWithPR implements CommandLineRunner {
         return GitMethods.clone(gitProperties.getRepoDestino(), destDir, BRANCH, creds);
     }
 
+
 }
 
