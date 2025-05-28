@@ -53,10 +53,8 @@ public class GitMethods {
         return repo.merge().include(upstream).call();
     }
 
-    public static void commitAndPush(Git repo, String timestamp, String updateBranch, UsernamePasswordCredentialsProvider creds) throws GitAPIException {
-        repo.commit()
-                .setMessage("Atualizando do repo base em " + timestamp)
-                .call();
+    public static void commitAndPush(Git repo, String mensagem, String updateBranch, UsernamePasswordCredentialsProvider creds) throws GitAPIException {
+        repo.commit().setMessage(mensagem).call();
 
         repo.push()
                 .setRemote("origin")

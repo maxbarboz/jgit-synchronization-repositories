@@ -1,34 +1,23 @@
 package com.exemplo.gitsync.service;
 
 import com.exemplo.gitsync.config.GitProperties;
-import com.exemplo.gitsync.dto.PullRequestRequest;
-import com.exemplo.gitsync.feign.GitHubClient;
+import com.exemplo.gitsync.methods.GitConflictResolve;
 import com.exemplo.gitsync.methods.GitHubMethods;
 import com.exemplo.gitsync.methods.GitMethods;
 import lombok.extern.log4j.Log4j2;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEditor;
-import org.eclipse.jgit.dircache.DirCacheEntry;
-import org.eclipse.jgit.lib.FileMode;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 @Service
 @Log4j2
@@ -39,11 +28,13 @@ public class GitSyncWithPR implements CommandLineRunner {
 
     private final GitProperties gitProperties;
     private final GitHubMethods gitHubMethods;
+    private final GitConflictResolve gitConflictResolve;
 
     @Autowired
-    public GitSyncWithPR(GitProperties gitProperties, GitHubMethods gitHubMethods) {
+    public GitSyncWithPR(GitProperties gitProperties, GitHubMethods gitHubMethods, GitConflictResolve gitConflictResolve) {
         this.gitProperties = gitProperties;
         this.gitHubMethods = gitHubMethods;
+        this.gitConflictResolve = gitConflictResolve;
     }
 
     @Override
@@ -74,92 +65,32 @@ public class GitSyncWithPR implements CommandLineRunner {
 
         GitMethods.checkout(repoDestino, BRANCH, updateBranch);
 
-        log.info("STAGE 5 - Fazendo merge na branch " + updateBranch);
+        log.info("STAGE 5 - Fazendo merge na branch {}", updateBranch);
         Ref upstream = repoDestino.getRepository().findRef("refs/remotes/upstream/" + BRANCH);
 
-        mergeAndValidacaoConflitos(repoDestino, upstream, timestamp, updateBranch, creds);
+        mergeAndValidacaoConflitos(repoDestino, upstream, updateBranch, creds);
 
         repoBase.close();
         repoDestino.close();
     }
 
-    private void mergeAndValidacaoConflitos(Git repoDestino, Ref upstream, String timestamp, String updateBranch,
+    private void mergeAndValidacaoConflitos(Git repoDestino, Ref upstream, String updateBranch,
                                             UsernamePasswordCredentialsProvider creds) throws GitAPIException, IOException {
+        String mensagem = "Merge realizado, não houve conflitos";
         MergeResult mergeResult = GitMethods.merge(repoDestino, upstream);
 
-        if (mergeResult.getMergeStatus().isSuccessful()) {
-            log.info("STAGE 6 - Merge realizado com sucesso - Enviando branch de atualização");
-            GitMethods.commitAndPush(repoDestino, timestamp, updateBranch, creds);
+        if(mergeResult.getMergeStatus() == MergeResult.MergeStatus.CONFLICTING) {
+            log.info("STAGE BÔNUS - Conflitos identificados, resolvendo antes de commitar.");
+            gitConflictResolve.resolvendoConflitos(mergeResult, repoDestino);
 
-            log.info("STAGE 7 - Abrindo Pull Request, por favor aguarde.");
-            gitHubMethods.abrirPullRequest(updateBranch, BRANCH, gitProperties);
-        } else if(mergeResult.getMergeStatus() == MergeResult.MergeStatus.CONFLICTING) {
-            resolvendoConflitos(mergeResult, repoDestino);
-        } else {
-            log.info("Merge falhou - Verificar manualmente.");
+            mensagem = "Merge resolvido automaticamente — mantendo versão remota";
         }
-    }
 
-    private void resolvendoConflitos(MergeResult mergeResult, Git git) throws IOException, GitAPIException {
-        System.out.println("Conflitos detectados:");
-        Map<String, int[][]> conflicts = mergeResult.getConflicts();
+        log.info("STAGE 6 - Merge realizado com sucesso - Enviando branch de atualização");
+        GitMethods.commitAndPush(repoDestino, mensagem, updateBranch, creds);
 
-        if (conflicts != null) {
-            for (String path : conflicts.keySet()) {
-                System.out.println("Arquivo em conflito: " + path);
-
-                // 🔥 Resolver mantendo versão REMOTA (stage 3)
-                ObjectId objectId = getObjectIdForStage(git.getRepository(), path, 3);
-
-                if (objectId != null) {
-                    byte[] content = git.getRepository().open(objectId).getBytes();
-
-                    File file = new File(git.getRepository().getWorkTree(), path);
-                    Files.createDirectories(file.getParentFile().toPath());
-                    Files.write(file.toPath(), content);
-
-                    // Adiciona ao index
-                    addFileToIndex(git.getRepository(), path, objectId);
-                } else {
-                    System.out.println("Não encontrou versão remota para " + path);
-                }
-            }
-
-            // Commit do merge resolvido
-            git.commit()
-                    .setMessage("Merge resolvido automaticamente — mantendo versão remota")
-                    .call();
-
-            System.out.println("Conflitos resolvidos e merge commit realizado.");
-        }
-    }
-
-    private static ObjectId getObjectIdForStage(Repository repository, String path, int stage) throws IOException {
-        DirCache dirCache = repository.readDirCache();
-        int entryCount = dirCache.getEntryCount();
-        for (int i = 0; i < entryCount; i++) {
-            DirCacheEntry entry = dirCache.getEntry(i);
-            if (entry.getPathString().equals(path) && entry.getStage() == stage) {
-                return entry.getObjectId();
-            }
-        }
-        return null;
-    }
-
-    private static void addFileToIndex(Repository repository, String path, ObjectId objectId) throws IOException {
-        DirCache dirCache = repository.lockDirCache();
-        DirCacheEditor editor = dirCache.editor();
-
-        editor.add(new DirCacheEditor.PathEdit(path) {
-            @Override
-            public void apply(DirCacheEntry ent) {
-                ent.setObjectId(objectId);
-                ent.setFileMode(FileMode.REGULAR_FILE);
-            }
-        });
-
-        editor.commit();
-        dirCache.unlock();
+        log.info("STAGE 7 - Abrindo Pull Request, por favor aguarde.");
+        gitHubMethods.abrirPullRequest(updateBranch, BRANCH, gitProperties);
     }
 
     private Git cloneRepositorioDestino(File destDir, UsernamePasswordCredentialsProvider creds) throws Exception {
