@@ -1,6 +1,6 @@
 git:
   repoBase: ${GIT_REPO_BASE}
-  repoDestino: ${GIT_REPO_DESTINO:}
+  repoDestino: ${GIT_REPO_DESTINO:repo-default}
   owner: ${GIT_OWNER}
   repoName: ${GIT_REPO_NAME:name-default}
   branch: ${GIT_BRANCH:main}

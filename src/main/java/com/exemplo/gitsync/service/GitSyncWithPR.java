@@ -95,7 +95,7 @@ public class GitSyncWithPR implements CommandLineRunner {
     }
 
     private Git cloneRepositorioDestino(File destDir, UsernamePasswordCredentialsProvider creds) throws Exception {
-        if(Objects.isNull(gitProperties.getRepoName()) || !gitHubMethods.checkRepositoryExists(gitProperties)) {
+        if(gitProperties.getRepoDestino().equals("repo-default") || !gitHubMethods.checkRepositoryExists(gitProperties)) {
             gitProperties.setRepoDestino(gitHubMethods.createRepository(gitProperties));
         }
 
