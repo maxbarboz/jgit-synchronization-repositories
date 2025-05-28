@@ -24,3 +24,5 @@ jobs:
 
       - name: Run the application
         run: java -jar target/*.jar
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
