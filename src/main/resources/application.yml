@@ -1,11 +1,10 @@
 git:
-  repo:
-    base: ${GIT_REPO_BASE:https://github.com/maxbarboz/simple-project-java.git}
-    destino: ${GIT_REPO_DESTINO:https://github.com/maxbarboz/name-default.git}
-  owner: ${GIT_OWNER:maxbarboz}
+  repoBase: ${GIT_REPO_BASE}
+  repoDestino: ${GIT_REPO_DESTINO:}
+  owner: ${GIT_OWNER}
   repoName: ${GIT_REPO_NAME:name-default}
   branch: ${GIT_BRANCH:main}
-  user: ${GIT_USER:maxbarboz}
+  user: ${GIT_USER}
   token: ${GIT_TOKEN}
 
 github:

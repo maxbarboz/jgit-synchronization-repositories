@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 @Service
 @Log4j2
@@ -94,8 +95,8 @@ public class GitSyncWithPR implements CommandLineRunner {
     }
 
     private Git cloneRepositorioDestino(File destDir, UsernamePasswordCredentialsProvider creds) throws Exception {
-        if(!gitHubMethods.checkRepositoryExists(gitProperties)) {
-            gitHubMethods.createRepository(gitProperties);
+        if(Objects.isNull(gitProperties.getRepoName()) || !gitHubMethods.checkRepositoryExists(gitProperties)) {
+            gitProperties.setRepoDestino(gitHubMethods.createRepository(gitProperties));
         }
 
         return GitMethods.clone(gitProperties.getRepoDestino(), destDir, BRANCH, creds);
