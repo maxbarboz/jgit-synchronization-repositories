@@ -22,7 +22,6 @@ import java.util.Map;
 public class GitConflictResolve {
 
     public void resolvendoConflitos(MergeResult mergeResult, Git git) throws IOException, GitAPIException {
-        log.info("\nConflitos detectados:");
         Map<String, int[][]> conflicts = mergeResult.getConflicts();
 
         if (conflicts != null) {
