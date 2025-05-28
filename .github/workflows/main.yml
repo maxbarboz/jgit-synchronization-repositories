@@ -20,12 +20,18 @@ jobs:
           java-version: '21'
 
       - name: Load .env to environment
-        run: cat .env >> $GITHUB_ENV
+        run: |
+          set -a
+          source .env
+          set +a
+          echo "execute=$execute" >> $GITHUB_ENV
 
       - name: Build with Maven
+        if: env.execute == 'true'
         run: mvn clean package
 
       - name: Run the application
+        if: env.execute == 'true'
         run: java -jar target/*.jar
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
