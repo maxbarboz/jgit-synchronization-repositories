@@ -26,7 +26,8 @@ jobs:
           set -a
           source .env
           set +a
-          echo "execute=$execute" >> $GITHUB_ENV
+          # Export all env vars to GITHUB_ENV to make them available in 'if' and subsequent steps
+          printenv | grep -v "GITHUB_ENV" >> $GITHUB_ENV
 
       - name: Build with Maven
         if: env.execute == 'true'
