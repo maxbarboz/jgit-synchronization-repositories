@@ -2,6 +2,7 @@ package com.exemplo.gitsync.methods;
 
 import com.exemplo.gitsync.config.GitProperties;
 import com.exemplo.gitsync.dto.GitHubRepoRequest;
+import com.exemplo.gitsync.dto.GitHubRepoResponse;
 import com.exemplo.gitsync.dto.PullRequestRequest;
 import com.exemplo.gitsync.feign.GitHubClient;
 import com.exemplo.gitsync.utils.Util;
@@ -42,7 +43,7 @@ public class GitHubMethods {
         }
     }
 
-    public void createRepository(GitProperties gitProperties) {
+    public String createRepository(GitProperties gitProperties) {
         GitHubRepoRequest request = new GitHubRepoRequest(
                 gitProperties.getRepoName(),
                 "Repositório criado via API com Feign",
@@ -50,7 +51,7 @@ public class GitHubMethods {
                 true
         );
 
-        client.createRepository(Util.generateBearerToken(gitProperties.getToken()), request);
+        return client.createRepository(Util.generateBearerToken(gitProperties.getToken()), request).getHtml_url();
     }
 
     public Boolean checkRepositoryExists(GitProperties gitProperties) throws Exception {
