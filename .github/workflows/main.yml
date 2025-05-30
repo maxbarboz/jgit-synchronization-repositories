@@ -1,9 +1,36 @@
 name: Build and Run Java Project
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      repoBase:
+        description: 'Repositório que será a base para a criação do novo'
+        required: false
+        default: 'https://github.com/maxbarboz/simple-project-java'
+        type: string
+      repoDestino:
+        description: 'Repositório de destino, será criado ou atualizado'
+        required: false
+        default: 'repo-default'
+        type: string
+      owner:
+        description: 'Owner'
+        required: false
+        type: string
+      repoName:
+        description: 'Nome do repositório de destino'
+        required: false
+        default: 'name-default'
+        type: string
+      branch:
+        description: 'Branch principal que será usada'
+        required: false
+        default: 'main'
+        type: string
+      user:
+        description: 'Usuário'
+        required: false
+        type: string  
 
 jobs:
   build-and-run:
@@ -19,13 +46,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Load .env to environment
-        run: |
-          set -a
-          source .env
-          set +a
-          echo "execute=$execute" >> $GITHUB_ENV
-
       - name: Build with Maven
         if: env.execute == 'true'
         run: mvn clean package
@@ -35,3 +55,9 @@ jobs:
         run: java -jar target/*.jar
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+          GIT_REPO_BASE: ${{ github.event.inputs.repoBase }}
+          GIT_REPO_DESTINO: ${{ github.event.inputs.repoDestino }}
+          GIT_OWNER: ${{ github.event.inputs.owner }}
+          GIT_REPO_NAME: ${{ github.event.inputs.repoName }}
+          GIT_BRANCH: ${{ github.event.inputs.branch }}
+          GIT_USER: ${{ github.event.inputs.user }}
