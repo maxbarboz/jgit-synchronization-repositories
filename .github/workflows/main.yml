@@ -47,11 +47,9 @@ jobs:
           java-version: '21'
 
       - name: Build with Maven
-        if: env.execute == 'true'
         run: mvn clean package
 
       - name: Run the application
-        if: env.execute == 'true'
         run: java -jar target/*.jar
         env:
           GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
